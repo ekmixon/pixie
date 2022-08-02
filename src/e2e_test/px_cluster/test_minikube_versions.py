@@ -26,8 +26,7 @@ from itertools import cycle
 
 
 def system_with_output(cmd):
-    output = subprocess.check_output(cmd, shell=True, encoding='UTF-8')
-    return output
+    return subprocess.check_output(cmd, shell=True, encoding='UTF-8')
 
 
 def sys_check(cmd):
@@ -102,15 +101,13 @@ def remote_link_by_version(version):
     # curl -sLO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64
     system = platform.system().lower()
     minikube_bin = f'minikube-{system}-amd64'
-    link = f'https://storage.googleapis.com/minikube/releases/{version}/{minikube_bin}'
-    return link
+    return f'https://storage.googleapis.com/minikube/releases/{version}/{minikube_bin}'
 
 
 def local_minikube_path_by_version(version):
     system = platform.system().lower()
     minikube_bin = f'minikube-{system}-amd64'
-    minikube_path = f'minikubes/{version}/{minikube_bin}'
-    return minikube_path
+    return f'minikubes/{version}/{minikube_bin}'
 
 
 def get_minikubes(versions):

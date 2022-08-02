@@ -54,6 +54,8 @@ def _line_col_exception(query: str, error_details: vpb.ErrorDetails, cluster_id:
 
 
 def build_pxl_exception(query: str, err: vpb.Status, cluster_id: str) -> Exception:
-    if not err.error_details:
-        return ValueError(f"On {cluster_id} {err.message}")
-    return _line_col_exception(query, err.error_details, cluster_id)
+    return (
+        _line_col_exception(query, err.error_details, cluster_id)
+        if err.error_details
+        else ValueError(f"On {cluster_id} {err.message}")
+    )

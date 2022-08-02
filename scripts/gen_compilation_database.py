@@ -32,10 +32,7 @@ def generateCompilationDatabase(args):
 
 
 def isHeader(filename):
-    for ext in (".h", ".hh", ".hpp", ".hxx"):
-        if filename.endswith(ext):
-            return True
-    return False
+    return any(filename.endswith(ext) for ext in (".h", ".hh", ".hpp", ".hxx"))
 
 
 def isCompileTarget(target, args):
@@ -43,24 +40,18 @@ def isCompileTarget(target, args):
     if not args.include_headers and isHeader(filename):
         return False
 
-    if not args.include_genfiles:
-        if filename.startswith("bazel-out/"):
-            return False
+    if not args.include_genfiles and filename.startswith("bazel-out/"):
+        return False
 
-    if not args.include_external:
-        if filename.startswith("external/"):
-            return False
+    if not args.include_external and filename.startswith("external/"):
+        return False
 
-    if not args.include_external:
-        if filename.startswith("third_party/"):
-            return False
+    if not args.include_external and filename.startswith("third_party/"):
+        return False
 
     # TODO(oazizi): Remove this after you fix includes. Disable
     # compilation database for bpftrace files.
-    if filename.endswith(".bt"):
-        return False
-
-    return True
+    return not filename.endswith(".bt")
 
 
 def modifyCompileCommand(target, args):

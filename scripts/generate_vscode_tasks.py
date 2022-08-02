@@ -50,16 +50,19 @@ def generateTaskSegment(target, exec_mode, comp_mode, output_std, v_level):
         raise ValueError('exec_mode must be either build or test')
     if comp_mode not in ['dbg', 'opt']:
         raise ValueError('comp_mode must be either dbg or opt')
-    args = []
-    args.append('{0}'.format(exec_mode))
-    args.append('--compilation_mode={0}'.format(comp_mode))
+    args = ['{0}'.format(exec_mode), '--compilation_mode={0}'.format(comp_mode)]
     if output_std:
-        args.append("--test_output=all")
-        args.append("--action_env=\"GTEST_COLOR=1\"")
-        args.append("--action_env=\"GLOG_logtostderr=1\"")
-        args.append("--action_env=\"GLOG_colorlogtostderr=1\"")
-        args.append("--action_env=\"GLOG_log_prefix=0\"")
-        args.append("--action_env=\"GLOG_v={}\"".format(v_level))
+        args.extend(
+            (
+                "--test_output=all",
+                "--action_env=\"GTEST_COLOR=1\"",
+                "--action_env=\"GLOG_logtostderr=1\"",
+                "--action_env=\"GLOG_colorlogtostderr=1\"",
+                "--action_env=\"GLOG_log_prefix=0\"",
+            )
+        )
+
+        args.append(f'--action_env=\"GLOG_v={v_level}\"')
     args.append(target)
 
     return {
@@ -119,26 +122,25 @@ def generateLaunchSegments(lldb_mode, target, output_base):
 def format_directory_target(path):
     if path[-1] != '/':
         path += '/'
-    return path + "..."
+    return f"{path}..."
 
 
 # Combines path sections into a formatted directory target.
 def split_path_format(path_sections):
-    return format_directory_target('//{}'.format('/'.join(path_sections)))
+    return format_directory_target(f"//{'/'.join(path_sections)}")
 
 
 # Gets the parent directory targets for a given target path.
 def get_all_parent_directories(target_path):
     split_path = target_path.split('/')
-    if not (split_path[0] == '' and split_path[1] == ''):
+    if split_path[0] != '' or split_path[1] != '':
         return []
 
     split_paths_content = split_path[2:]
-    new_paths = []
-    for i in range(0, len(split_paths_content) + 1):
-        new_paths.append(split_path_format(split_paths_content[:i]))
-
-    return new_paths
+    return [
+        split_path_format(split_paths_content[:i])
+        for i in range(len(split_paths_content) + 1)
+    ]
 
 
 # Takes in the list of targets and adds all of the parent directories as targets.

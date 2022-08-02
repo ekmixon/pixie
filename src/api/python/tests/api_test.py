@@ -215,10 +215,7 @@ class TestClient(unittest.TestCase):
         # execute a script on those clusters.
 
         clusters = self.px_client.list_healthy_clusters()
-        self.assertSetEqual(
-            set([c.name() for c in clusters]),
-            {"cluster1", "cluster2"}
-        )
+        self.assertSetEqual({c.name() for c in clusters}, {"cluster1", "cluster2"})
 
         # Connect to a single fake cluster.
         conn = self.px_client.connect_to_cluster(clusters[0])
@@ -786,9 +783,9 @@ class TestClient(unittest.TestCase):
 
         clusters = self.px_client.list_healthy_clusters()
         self.assertSetEqual(
-            set([c.name() for c in clusters]),
-            {"cluster1", "cluster2", "dc_cluster"}
+            {c.name() for c in clusters}, {"cluster1", "cluster2", "dc_cluster"}
         )
+
 
         conns = [
             self.px_client.connect_to_cluster(c) for c in clusters if c.name() == 'dc_cluster'

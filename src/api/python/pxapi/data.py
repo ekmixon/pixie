@@ -42,11 +42,14 @@ class _Relation:
         self._create_col_formatters()
 
     def get_key_idx(self, key: str) -> int:
-        for idx, k in enumerate(self._columns):
-            if self._columns[idx].column_name == key:
-                return idx
-
-        return -1
+        return next(
+            (
+                idx
+                for idx, k in enumerate(self._columns)
+                if self._columns[idx].column_name == key
+            ),
+            -1,
+        )
 
     def _col_formatter_impl(self, idx: int) -> ColumnFn:
         column = self._columns[idx]
@@ -71,7 +74,6 @@ class _Relation:
         if column_type == vpb.BOOLEAN:
             return lambda x, i: get_i(x.boolean_data, i)
         raise ValueError("{} type not supported".format(column_type))
-        return lambda x, i: ''
 
     def _create_col_formatters(self) -> None:
         for i in range(len(self._columns)):
@@ -93,11 +95,7 @@ class _Relation:
         if len(self._columns) != len(other._columns):
             return False
 
-        for left, right in zip(self._columns, other._columns):
-            if left != right:
-                return False
-
-        return True
+        return all(left == right for left, right in zip(self._columns, other._columns))
 
 
 def _encode_uint128_as_UUID(uint128: vpb.UInt128) -> uuid.UUID:
@@ -138,8 +136,9 @@ class Row:
         self._data = data
         self.relation = table.relation
         if len(self._data) != self.relation.num_cols():
-            raise ValueError('Mismatch of row length {} and relation size {}'.format(
-                len(self._data), self.relation.num_cols()))
+            raise ValueError(
+                f'Mismatch of row length {len(self._data)} and relation size {self.relation.num_cols()}'
+            )
 
     def __getitem__(self, column: Union[str, int]) -> Any:
         """
@@ -151,7 +150,7 @@ class Row:
         if isinstance(column, str):
             idx = self.relation.get_key_idx(column)
             if idx == -1:
-                raise KeyError("'{}' not found in relation".format(column))
+                raise KeyError(f"'{column}' not found in relation")
         elif isinstance(column, int):
             idx = column
         else:
@@ -195,7 +194,7 @@ class _TableStream:
 
     async def _row_batches(self) -> AsyncGenerator[_Rowbatch, None]:
         if not self._subscribed:
-            raise ValueError("Table '{}' not subscribed.".format(self.name))
+            raise ValueError(f"Table '{self.name}' not subscribed.")
         # Get the batch from somewhere, continue yielding until done.
         while True:
             rb: _Rowbatch = await self._rowbatch_q.get()

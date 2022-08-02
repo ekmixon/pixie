@@ -87,8 +87,7 @@ class TableSub:
                 break
 
         if table_stream is None:
-            raise ValueError(
-                "Table '{}' not received".format(self.table_name))
+            raise ValueError(f"Table '{self.table_name}' not received")
 
         async for row in table_stream:
             yield row
@@ -216,8 +215,9 @@ class ScriptExecutor:
         self._fail_on_multi_run()
         if self._is_table_subscribed(table_name):
             raise ValueError(
-                ("Already subscribed to '{}'. Wrap the first subscription "
-                 "to enable multiple subscribers.").format(table_name))
+                f"Already subscribed to '{table_name}'. Wrap the first subscription to enable multiple subscribers."
+            )
+
 
         sub = TableSub(table_name, self._tables())
         self._subscribed_tables.add(table_name)
@@ -349,7 +349,7 @@ class ScriptExecutor:
     async def _process_data_batch(self, batch: vpb.RowBatchData) -> None:
         table_id = batch.table_id
         async with self._tables_lock:
-            assert table_id in self._table_id_to_table_map, "id is missing " + table_id
+            assert table_id in self._table_id_to_table_map, f"id is missing {table_id}"
             self._table_id_to_table_map[table_id].add_row_batch(batch)
 
     async def _set_exec_stats(self,
@@ -433,8 +433,7 @@ class ScriptExecutor:
         self.run()
         # TODO(philkuz,PP-2424) update the run call to be multi-threaded
         # to avoid accumulating memory for rows.
-        for r in rows:
-            yield r
+        yield from rows
 
     async def _run_conn(self, conn: Conn) -> None:
         """ Executes the script on a single connection. """
@@ -490,9 +489,7 @@ class Cluster:
 
     def name(self) -> str:
         """ Returns the name if that info exists, otherwise returns the id. """
-        if self.info is None:
-            return self.id
-        return self.info.cluster_name
+        return self.id if self.info is None else self.info.cluster_name
 
     def passthrough(self) -> bool:
         return self.info.config.passthrough_enabled
@@ -544,18 +541,14 @@ class Client:
 
     def list_healthy_clusters(self) -> List[Cluster]:
         """ Lists all of the healthy clusters that you can access.  """
-        healthy_clusters: List[Cluster] = []
-        for c in self._get_cluster(cpb.GetClusterConnectionInfoRequest()):
-            if c.status != cpb.CS_HEALTHY:
-                continue
-            healthy_clusters.append(
-                Cluster(
-                    cluster_id=uuid_pb_to_string(c.id),
-                    cluster_info=c,
-                )
+        return [
+            Cluster(
+                cluster_id=uuid_pb_to_string(c.id),
+                cluster_info=c,
             )
-
-        return healthy_clusters
+            for c in self._get_cluster(cpb.GetClusterConnectionInfoRequest())
+            if c.status == cpb.CS_HEALTHY
+        ]
 
     def _get_cluster_info(self, cluster_id: ClusterID) -> cpb.ClusterInfo:
         request = cpb.GetClusterInfoRequest(
@@ -572,11 +565,13 @@ class Client:
         request = cpb.GetClusterConnectionInfoRequest(
             id=uuid_pb_from_string(cluster_id)
         )
-        response = stub.GetClusterConnectionInfo(request, metadata=[
-            ("pixie-api-key", self._token),
-            ("pixie-api-client", "python")
-        ])
-        return response
+        return stub.GetClusterConnectionInfo(
+            request,
+            metadata=[
+                ("pixie-api-key", self._token),
+                ("pixie-api-client", "python"),
+            ],
+        )
 
     def _create_passthrough_conn(
         self,

@@ -127,14 +127,14 @@ def get_spdx_from_license(path):
 
 
 def c_style_license_wrapper(txt: str):
-    txt = ' ' + txt.strip()
-    txt_with_stars = '\n'.join([' *' + line for line in txt.split('\n')])
+    txt = f' {txt.strip()}'
+    txt_with_stars = '\n'.join([f' *{line}' for line in txt.split('\n')])
     return '/*\n' + txt_with_stars + '\n */'
 
 
 def sh_style_license_wrapper(txt: str):
-    txt = ' ' + txt.strip()
-    return '\n'.join(['#' + line for line in txt.split('\n')])
+    txt = f' {txt.strip()}'
+    return '\n'.join([f'#{line}' for line in txt.split('\n')])
 
 
 def has_spdx(blob: str):
@@ -222,7 +222,7 @@ def is_generated_code(file_path: str):
 
 
 def is_skipped(file_path: str):
-    license_file = file_path in ['LICENSE', 'LICENSE.txt', 'go.mod', 'go.sum']
+    license_file = file_path in {'LICENSE', 'LICENSE.txt', 'go.mod', 'go.sum'}
     return is_generated_code(file_path) or license_file
 
 
@@ -250,9 +250,7 @@ class AddLicenseDiff:
         self._txt = txt
 
     def phabricator(self):
-        # <Filename>:<LineNumber>,<offset>
-        s = "{}:{},1\n".format(self._filename, self._start_line)
-        s += "<<<<<\n"
+        s = f"{self._filename}:{self._start_line},1\n" + "<<<<<\n"
         s += "=====\n"
         s += self._txt + '\n'
         s += ">>>>>"
@@ -277,7 +275,7 @@ def generate_diff_if_needed(path):
 
     matcher = find_matcher(path)
     if not matcher:
-        logging.error("Did not find valid matcher for file: {}".format(path))
+        logging.error(f"Did not find valid matcher for file: {path}")
         return None
 
     # Read the file contents.
@@ -294,10 +292,7 @@ def generate_diff_if_needed(path):
     # We will use that as the default license for this file.
     (subpath, remain) = os.path.split(path)
     license = None
-    while True:
-        if remain == '':
-            break
-
+    while remain != '':
         license_file = os.path.join(subpath, 'LICENSE')
         if os.path.isfile(license_file):
             license = get_spdx_from_license(license_file)
@@ -321,12 +316,10 @@ def generate_diff_if_needed(path):
         license_text = expected_license
         # If we aren't the first line then add a space between the license and other lines.
         # Since we split, '' means there was a \n.
-        if offset > 0:
-            if content_lines[offset - 1] != '':
-                license_text = '\n' + license_text
-        if offset < len(content_lines):
-            if content_lines[offset] != '':
-                license_text = license_text + '\n'
+        if offset > 0 and content_lines[offset - 1] != '':
+            license_text = '\n' + license_text
+        if offset < len(content_lines) and content_lines[offset] != '':
+            license_text = license_text + '\n'
         return AddLicenseDiff(path, offset + 1, license_text)
 
 

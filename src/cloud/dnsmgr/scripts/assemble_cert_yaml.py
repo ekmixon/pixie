@@ -23,17 +23,11 @@ import re
 def grab_address(fname):
     desired_extensions = ['.crt', '.key']
     unwanted_extensions = ['.json', '.issuer.crt']
-    address = ''
-    for e in desired_extensions:
-        if e in fname:
-            address = fname.replace(e, '')
-            break
+    address = next(
+        (fname.replace(e, '') for e in desired_extensions if e in fname), ''
+    )
 
-    for e in unwanted_extensions:
-        if e in fname:
-            return ""
-
-    return address
+    return next(("" for e in unwanted_extensions if e in fname), address)
 
 
 def make_address_file_map(directory):
@@ -52,23 +46,20 @@ def make_file_content_dictionary(parent_directory, parent_key, files):
     file_contents_map = {}
     for fname in files:
         with open(os.path.join(parent_directory, fname)) as f:
-            file_contents_map[fname.replace(
-                "{}.".format(parent_key), "")] = f.read().strip()
+            file_contents_map[fname.replace(f"{parent_key}.", "")] = f.read().strip()
     return file_contents_map
 
 
 def format_file_dictionary(parent_directory, address_to_files_map):
-    address_to_file_content_map = {}
-    for address, files in address_to_files_map.items():
-        address_to_file_content_map[address] = make_file_content_dictionary(
-            parent_directory, address, files)
-    return address_to_file_content_map
+    return {
+        address: make_file_content_dictionary(parent_directory, address, files)
+        for address, files in address_to_files_map.items()
+    }
 
 
 def get_namespace(address):
     matches = re.findall('clusters.*dev|clusters.*ai', address)
-    assert len(matches) == 1, "num matches = {}; address = {}".format(
-        len(matches), address)
+    assert len(matches) == 1, f"num matches = {len(matches)}; address = {address}"
     return matches[0]
 
 

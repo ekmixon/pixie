@@ -174,9 +174,11 @@ class FakeTable:
         for c in cols[1:]:
             assert len(c) == len(
                 cols[0]), f"Rows are not aligned {len(c)}, {len(cols[0])}"
-        formatted_cols: List[vpb.Column] = []
-        for c, t in zip(cols, self.relation.columns):
-            formatted_cols.append(_make_column(c, t.column_type))
+        formatted_cols: List[vpb.Column] = [
+            _make_column(c, t.column_type)
+            for c, t in zip(cols, self.relation.columns)
+        ]
+
         return vpb.RowBatchData(
             table_id=self.id,
             eow=eow,
